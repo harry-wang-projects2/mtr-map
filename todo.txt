@@ -1,3 +1,11 @@
+A bit more from May 30:
+Look into how to get the route geometries of the routes (GeoJSON)?
+Add more file export/import options. (I.e. export it directly as an HTML file)
+Map rotation.
+Save to Cache.
+Maplibre/Openlayers
+
+
 New stuff from Apr 7:
 Display the round trip travel time
 Set custom zoom to get the same shot every time
