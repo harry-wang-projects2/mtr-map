@@ -52,19 +52,7 @@ class Train {
     //how many stations it went to. Used for debugging.
     this.visitedstations = 0;
     
-    // Only create marker if requested (not needed during generation)
-    this.marker = null;
-    if (createMarker) {
-    this.marker = L.marker(this.latlng(), {
-      icon: L.divIcon({
-        html:`<div style="
-          background:${lines[this.line_id].line_color};
-          width:20px;height:20px;border-radius:50%;
-          border:2px solid #fff;"></div>  `,
-        iconSize:[0,0], iconAnchor:[10,10]
-      })
-    }).addTo(map);
-    }
+    
   }
   
   getBranch(){

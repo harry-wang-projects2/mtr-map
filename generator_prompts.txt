@@ -1,0 +1,2 @@
+
+Currently, the program uses Leaflet.js to display the markers and play the animation. Switch the mapping library to Maplibre. Since animation-generator.js only generates an array of coordinates for the trains every second, it doesn't draw anything. Hence, don't edit animation-generator.js.
