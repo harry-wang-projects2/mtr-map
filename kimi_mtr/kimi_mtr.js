@@ -225,7 +225,7 @@ function reset_lines(){
     const lngs = allLineCoords.map(c => c[1]);
     map.fitBounds(
       [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]],
-      { padding: 50 }
+      { padding: 50, duration: 0, linear:true }
     );
   }
   if(document.getElementById("tickdisplay")){
