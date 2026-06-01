@@ -760,6 +760,45 @@
                     if(event.key == " "){
                         this.addStation(this.activeTab, this.activeBranchTabs[this.activeTab]);
                     }
+                    if (event.key === 'd' || event.key === 'D') {
+                        if (!this.mapHighlight) return;
+                        const h = this.mapHighlight;
+                        const branch = this.lines[h.lineIndex].branches[h.branchIndex];
+                        const numStations = branch.stations.length;
+                        const nextIndex = (h.stationIndex + 1) % numStations;
+                        this.showStationOnMap(h.lineIndex, h.branchIndex, nextIndex);
+                    }
+                    if (event.key === 'a' || event.key === 'A') {
+                        if (!this.mapHighlight) return;
+                        const h = this.mapHighlight;
+                        const branch = this.lines[h.lineIndex].branches[h.branchIndex];
+                        const numStations = branch.stations.length;
+                        const prevIndex = (h.stationIndex - 1 + numStations) % numStations;
+                        this.showStationOnMap(h.lineIndex, h.branchIndex, prevIndex);
+                    }
+                    if (event.key === 'c' || event.key === 'C') {
+                        if (!this.mapHighlight) return;
+                        const h = this.mapHighlight;
+                        let lat, lng;
+                        if (h.type === 'station') {
+                            const station = this.lines[h.lineIndex].branches[h.branchIndex].stations[h.stationIndex];
+                            lat = station.lat;
+                            lng = station.lng;
+                        } else if (h.type === 'checkpoint') {
+                            const station = this.lines[h.lineIndex].branches[h.branchIndex].stations[h.stationIndex];
+                            const checkpoint = station.checkpoints[h.checkpointIndex];
+                            lat = checkpoint.lat;
+                            lng = checkpoint.lng;
+                        }
+                        if (lat && lng) {
+                            this.map.setView([lat, lng]);
+                        }
+                    }
+                    if (event.key === 'e' || event.key === 'E') {
+                        if (!this.mapHighlight) return;
+                        const h = this.mapHighlight;
+                        this.addCheckpoint(h.lineIndex, h.branchIndex, h.stationIndex);
+                    }
                 }
             }
         }).mount('#app');
