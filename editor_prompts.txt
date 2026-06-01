@@ -9,3 +9,6 @@ In editor_version1.html, add the following keys:
 - If I press A, then the highlighted station shifts to the previous station in the branch. Everything should be the same as when I press D, except that the highlighted station becomes the previous station instead of the next.
 - If I press C, then the camera (e.g. the viewport of the map) centers on the currently highlighted station. Don't change the zoom, just center the camera on the new position.
 - If I press E, then the code enters checkpoint mode at the current highlighted station. This should be the same as if I pressed the "add checkpoint" button.
+
+
+The program editor_version1.html currently uses leaflet.js for drawing things on a map. Switch the library to Maplibre.

@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Subway Map Editor</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" />
+    <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
     <link rel="stylesheet" href="editor_version1.css">
 </head>
 <body>
@@ -317,9 +317,9 @@
                 coordinateMode: {
                     handler(newMode) {
                         if (newMode) {
-                            this.map.getContainer().style.cursor = 'crosshair';
+                            this.map.getCanvas().style.cursor = 'crosshair';
                         } else {
-                            this.map.getContainer().style.cursor = '';
+                            this.map.getCanvas().style.cursor = '';
                         }
                     }
                 },
@@ -358,21 +358,34 @@
                 calculate_allprogresses(lineIndex, branchIndex) { calculate_allprogresses(this, lineIndex, branchIndex); },
                 calculate_traveltimes(lineIndex, branchIndex) { calculate_traveltimes(this, lineIndex, branchIndex); },
                 initMap() {
-                    this.map = L.map('map').setView([22.3, 114.2], 11);
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '© OpenStreetMap contributors'
-                    }).addTo(this.map);
-                    
+                    this.map = new maplibregl.Map({
+                        container: 'map',
+                        style: {
+                            version: 8,
+                            sources: {
+                                osm: {
+                                    type: 'raster',
+                                    tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+                                    tileSize: 256,
+                                    attribution: '© OpenStreetMap contributors'
+                                }
+                            },
+                            layers: [{ id: 'osm', type: 'raster', source: 'osm' }]
+                        },
+                        center: [114.2, 22.3],
+                        zoom: 10
+                    });
+
                     this.map.on('click', (e) => {
                         if (this.coordinateMode) {
                             const { target, lineIndex, branchIndex, stationIndex, checkpointIndex } = this.coordinateMode;
                             const station = this.lines[lineIndex].branches[branchIndex].stations[stationIndex];
                             if (target === 'station') {
-                                station.lat = e.latlng.lat;
-                                station.lng = e.latlng.lng;
+                                station.lat = e.lngLat.lat;
+                                station.lng = e.lngLat.lng;
                             } else if (target === 'checkpoint' && station.checkpoints && station.checkpoints[checkpointIndex]) {
-                                station.checkpoints[checkpointIndex].lat = e.latlng.lat;
-                                station.checkpoints[checkpointIndex].lng = e.latlng.lng;
+                                station.checkpoints[checkpointIndex].lat = e.lngLat.lat;
+                                station.checkpoints[checkpointIndex].lng = e.lngLat.lng;
                             }
                             this.coordinateMode = null;
                         }
@@ -404,10 +417,21 @@
                 },
                 updateMap(change_zoom) {
                     this.validateMapHighlight();
-                    this.markers.forEach(marker => this.map.removeLayer(marker));
-                    this.polylines.forEach(polyline => this.map.removeLayer(polyline));
+                    this.markers.forEach(marker => marker.remove());
+                    this.polylines.forEach(id => {
+                        if (this.map.getLayer(id)) this.map.removeLayer(id);
+                        if (this.map.getSource(id)) this.map.removeSource(id);
+                    });
                     this.markers = [];
                     this.polylines = [];
+
+                    if (!this.map.isStyleLoaded()) {
+                        this.map.once('load', () => this.updateMap(change_zoom));
+                        return;
+                    }
+
+                    let allCoords = [];
+                    let polylineCounter = 0;
 
                     this.lines.forEach((line, lineIndex) => {
                         line.branches.forEach((branch, branchIndex) => {
@@ -416,14 +440,14 @@
                             //copied from kimi_mtr.js
                             for(let s = 0; s < branch.stations.length; s++){
                                 const station = branch.stations[s];
-                                coords.push([station.lat, station.lng]);
+                                coords.push([station.lng, station.lat]);
                                 if(s < branch.stations.length - 1 && station.checkpoints && Array.isArray(station.checkpoints)){
                                     const sortedCheckpoints = [...station.checkpoints].sort((a, b) => {
                                         const progA = a.progress !== undefined ? a.progress : (a.progresss !== undefined ? a.progresss : 0);
                                         const progB = b.progress !== undefined ? b.progress : (b.progresss !== undefined ? b.progresss : 0);
                                         return progA - progB;
                                     });
-                                    sortedCheckpoints.forEach(cp => coords.push([cp.lat, cp.lng]));
+                                    sortedCheckpoints.forEach(cp => coords.push([cp.lng, cp.lat]));
                                 }
                             }
                             if(branch.hasOwnProperty("branch_type") && branch.branch_type === "circular"){
@@ -434,9 +458,9 @@
                                         const progB = b.progress !== undefined ? b.progress : (b.progresss !== undefined ? b.progresss : 0);
                                         return progA - progB;
                                     });
-                                    sortedCheckpoints.forEach(cp => coords.push([cp.lat, cp.lng]));
+                                    sortedCheckpoints.forEach(cp => coords.push([cp.lng, cp.lat]));
                                 }
-                                coords.push([branch.stations[0].lat, branch.stations[0].lng]);
+                                coords.push([branch.stations[0].lng, branch.stations[0].lat]);
                             }
 
                             // stations and checkpoint markers (checkpoints are also polyline vertices; markers make them easy to highlight)
@@ -448,17 +472,17 @@
                                         this.mapHighlight.lineIndex === lineIndex &&
                                         this.mapHighlight.branchIndex === branchIndex &&
                                         this.mapHighlight.stationIndex === stationIndex;
-                                    const marker = L.circleMarker([station.lat, station.lng], {
-                                        radius: stationHl ? 16 : 6,
-                                        fillColor: line.line_color,
-                                        color: stationHl ? '#ffcc00' : '#000',
-                                        weight: stationHl ? 5 : 2,
-                                        opacity: 1,
-                                        fillOpacity: stationHl ? 1 : 0.8
-                                    }).addTo(this.map);
-                                    marker.bindPopup(`<b>${station.name || 'Unnamed'}</b><br>${line.name}`);
+                                    const size = stationHl ? 32 : 12;
+                                    const el = document.createElement('div');
+                                    el.style.cssText = `width:${size}px;height:${size}px;border-radius:50%;background-color:${line.line_color};border:${stationHl ? '5px solid #ffcc00' : '2px solid #000'};opacity:${stationHl ? '1' : '0.8'};cursor:pointer;box-sizing:border-box;`;
+                                    const popup = new maplibregl.Popup({ offset: 12 })
+                                        .setHTML(`<b>${station.name || 'Unnamed'}</b><br>${line.name}`);
+                                    const marker = new maplibregl.Marker({ element: el })
+                                        .setLngLat([station.lng, station.lat])
+                                        .setPopup(popup)
+                                        .addTo(this.map);
                                     this.markers.push(marker);
-                                    if (stationHl) marker.bringToFront();
+                                    allCoords.push([station.lng, station.lat]);
                                 }
                                 if (station.checkpoints && Array.isArray(station.checkpoints)) {
                                     station.checkpoints.forEach((checkpoint, checkpointIndex) => {
@@ -470,45 +494,53 @@
                                                 this.mapHighlight.branchIndex === branchIndex &&
                                                 this.mapHighlight.stationIndex === stationIndex &&
                                                 this.mapHighlight.checkpointIndex === checkpointIndex;
-                                            const cpMarker = L.circleMarker([checkpoint.lat, checkpoint.lng], {
-                                                radius: cpHl ? 14 : 4,
-                                                fillColor: '#ffffff',
-                                                color: cpHl ? '#ffcc00' : line.line_color,
-                                                weight: cpHl ? 5 : 2,
-                                                opacity: 1,
-                                                fillOpacity: 1
-                                            }).addTo(this.map);
-                                            cpMarker.bindPopup(
-                                                `<b>Checkpoint ${checkpointIndex + 1}</b><br>${station.name || 'Unnamed'}<br>${line.name}`
-                                            );
+                                            const cpSize = cpHl ? 28 : 8;
+                                            const cpEl = document.createElement('div');
+                                            cpEl.style.cssText = `width:${cpSize}px;height:${cpSize}px;border-radius:50%;background-color:#ffffff;border:${cpHl ? '5px solid #ffcc00' : `2px solid ${line.line_color}`};cursor:pointer;box-sizing:border-box;`;
+                                            const cpPopup = new maplibregl.Popup({ offset: 12 })
+                                                .setHTML(`<b>Checkpoint ${checkpointIndex + 1}</b><br>${station.name || 'Unnamed'}<br>${line.name}`);
+                                            const cpMarker = new maplibregl.Marker({ element: cpEl })
+                                                .setLngLat([checkpoint.lng, checkpoint.lat])
+                                                .setPopup(cpPopup)
+                                                .addTo(this.map);
                                             this.markers.push(cpMarker);
-                                            if (cpHl) cpMarker.bringToFront();
                                         }
                                     });
                                 }
                             });
 
-                            /*
-                            if(branch.branch_type == "circular"){
-                                coords.push([branch.stations[0].lat, branch.stations[0].lng])
-                            }
-                            */
-
                             if (coords.length > 1) {
-                                const polyline = L.polyline(coords, {
-                                    color: line.line_color,
-                                    weight: 4,
-                                    opacity: 0.7
-                                }).addTo(this.map);
-                                this.polylines.push(polyline);
+                                const sourceId = `polyline-${polylineCounter++}`;
+                                this.map.addSource(sourceId, {
+                                    type: 'geojson',
+                                    data: {
+                                        type: 'Feature',
+                                        geometry: { type: 'LineString', coordinates: coords }
+                                    }
+                                });
+                                this.map.addLayer({
+                                    id: sourceId,
+                                    type: 'line',
+                                    source: sourceId,
+                                    paint: {
+                                        'line-color': line.line_color,
+                                        'line-width': 4,
+                                        'line-opacity': 0.7
+                                    }
+                                });
+                                this.polylines.push(sourceId);
                             }
                         });
                     });
 
                     // Only fit bounds if not in coordinate mode
-                    if (this.markers.length > 0 && !this.coordinateMode && change_zoom == true) {
-                        const group = L.featureGroup(this.markers);
-                        this.map.fitBounds(group.getBounds().pad(0.1));
+                    if (allCoords.length > 0 && !this.coordinateMode && change_zoom === true) {
+                        const lngs = allCoords.map(c => c[0]);
+                        const lats = allCoords.map(c => c[1]);
+                        this.map.fitBounds(
+                            [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]],
+                            { padding: 40 }
+                        );
                     }
                 },
                 loadSampleData() {
@@ -791,7 +823,7 @@
                             lng = checkpoint.lng;
                         }
                         if (lat && lng) {
-                            this.map.setView([lat, lng]);
+                            this.map.setCenter([lng, lat]);
                         }
                     }
                     if (event.key === 'e' || event.key === 'E') {
