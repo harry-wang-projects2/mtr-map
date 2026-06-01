@@ -243,7 +243,7 @@ class Train {
           }
         }
         this.movingstate = 0;
-        this.dwellProgress = this.segmentProgress - leg;
+        this.dwellProgress = this.segmentProgress - leg + 1;
         this.segmentProgress = 0;
       }
       //reduce refresh rate as it shouldn't exceed 60 fps
@@ -252,8 +252,9 @@ class Train {
       }
     }else{
       //dwelling
-      this.dwellProgress+=TICK_LENGTH;
-      if(this.dwellProgress >= dwell){
+      if(this.dwellProgress < dwell){
+        this.dwellProgress+=TICK_LENGTH;
+      }else{
         this.visitedstations++;
         this.movingstate = 1;
 
@@ -271,7 +272,7 @@ class Train {
           }
           branch.trains.pop();
         }
-        this.segmentProgress = this.dwellProgress - dwell;
+        this.segmentProgress = this.dwellProgress - dwell + 1;
       }
     }
   }
@@ -389,7 +390,10 @@ function generateAnimation(onProgress = null){
               onProgress(stepsDone, totalSteps, 0, true);
             }
           }
+          trajectory.pop();
           journeyTimeSeconds = trajectory.length;
+          console.log(journeyTimeSeconds);
+          console.log(computeBranchJourneySeconds(branch));
 
           // Spawn offsets: create "virtual trains" at spawn frequency intervals.
           // We initialize their timeProgress values at the global playback start (spawn_completed_time).
