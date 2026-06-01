@@ -275,7 +275,13 @@
 
     <script type="module">
         import {generate_train_icon_2} from "./editor_visualstuff.js";
-        import {autotime, autoprogress} from "./editor_helpers.js";
+        import {
+            deepClone, nextUniqueLineId, nextUniqueBranchId, nextUniqueLineName,
+            addLine, cloneLine, requestDeleteLine, requestDeleteBranch, requestDeleteStation, requestDeleteCheckpoint,
+            confirmDelete, cancelDelete, deleteLine, addBranch, cloneBranch, deleteBranch,
+            updateicon, addStation, deleteStation, addCheckpoint, deleteCheckpoint,
+            moveStationUp, moveCheckpointUp, calculate_progress, calculate_allprogresses, calculate_traveltimes
+        } from "./lines.js";
         const { createApp } = Vue;
 
         createApp({
@@ -325,32 +331,32 @@
                 }
             },
             methods: {
-                deepClone(obj) {
-                    //if (typeof structuredClone === 'function') return structuredClone(obj);
-                    return JSON.parse(JSON.stringify(obj));
-                },
-                nextUniqueLineId() {
-                    const used = new Set(this.lines.map(l => Number(l.line_id)).filter(n => Number.isFinite(n)));
-                    let candidate = used.size > 0 ? Math.max(...used) + 1 : 1;
-                    while (used.has(candidate)) candidate += 1;
-                    return candidate;
-                },
-                nextUniqueBranchId(lineIndex) {
-                    const branches = this.lines[lineIndex]?.branches || [];
-                    const used = new Set(branches.map(b => Number(b.branch_id)).filter(n => Number.isFinite(n)));
-                    let candidate = used.size > 0 ? Math.max(...used) + 1 : 0;
-                    while (used.has(candidate)) candidate += 1;
-                    return candidate;
-                },
-                nextUniqueLineName(baseName) {
-                    const used = new Set(this.lines.map(l => (l.name || '').trim()).filter(Boolean));
-                    const base = (baseName || 'New Line').trim() || 'New Line';
-                    let candidate = `${base} (Copy)`;
-                    if (!used.has(candidate)) return candidate;
-                    let i = 2;
-                    while (used.has(`${candidate} ${i}`)) i += 1;
-                    return `${candidate} ${i}`;
-                },
+                deepClone(obj) { return deepClone(obj); },
+                nextUniqueLineId() { return nextUniqueLineId(this); },
+                nextUniqueBranchId(lineIndex) { return nextUniqueBranchId(this, lineIndex); },
+                nextUniqueLineName(baseName) { return nextUniqueLineName(this, baseName); },
+                addLine() { addLine(this); },
+                cloneLine(lineIndex) { cloneLine(this, lineIndex); },
+                requestDeleteLine(lineIndex) { requestDeleteLine(this, lineIndex); },
+                requestDeleteBranch(lineIndex, branchIndex) { requestDeleteBranch(this, lineIndex, branchIndex); },
+                requestDeleteStation(lineIndex, branchIndex, stationIndex) { requestDeleteStation(this, lineIndex, branchIndex, stationIndex); },
+                requestDeleteCheckpoint(lineIndex, branchIndex, stationIndex, checkpointIndex) { requestDeleteCheckpoint(this, lineIndex, branchIndex, stationIndex, checkpointIndex); },
+                confirmDelete() { confirmDelete(this); },
+                cancelDelete() { cancelDelete(this); },
+                deleteLine(lineIndex) { deleteLine(this, lineIndex); },
+                addBranch(lineIndex) { addBranch(this, lineIndex); },
+                cloneBranch(lineIndex, branchIndex) { cloneBranch(this, lineIndex, branchIndex); },
+                deleteBranch(lineIndex, branchIndex) { deleteBranch(this, lineIndex, branchIndex); },
+                updateicon(lineIndex) { updateicon(this, lineIndex); },
+                addStation(lineIndex, branchIndex) { addStation(this, lineIndex, branchIndex); },
+                deleteStation(lineIndex, branchIndex, stationIndex) { deleteStation(this, lineIndex, branchIndex, stationIndex); },
+                addCheckpoint(lineIndex, branchIndex, stationIndex) { addCheckpoint(this, lineIndex, branchIndex, stationIndex); },
+                deleteCheckpoint(lineIndex, branchIndex, stationIndex, checkpointIndex) { deleteCheckpoint(this, lineIndex, branchIndex, stationIndex, checkpointIndex); },
+                moveStationUp(lineIndex, branchIndex, stationIndex) { moveStationUp(this, lineIndex, branchIndex, stationIndex); },
+                moveCheckpointUp(lineIndex, branchIndex, stationIndex, checkpointIndex) { moveCheckpointUp(this, lineIndex, branchIndex, stationIndex, checkpointIndex); },
+                calculate_progress(lineIndex, branchIndex, stationIndex) { calculate_progress(this, lineIndex, branchIndex, stationIndex); },
+                calculate_allprogresses(lineIndex, branchIndex) { calculate_allprogresses(this, lineIndex, branchIndex); },
+                calculate_traveltimes(lineIndex, branchIndex) { calculate_traveltimes(this, lineIndex, branchIndex); },
                 initMap() {
                     this.map = L.map('map').setView([22.3, 114.2], 11);
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -505,261 +511,6 @@
                         this.map.fitBounds(group.getBounds().pad(0.1));
                     }
                 },
-                addLine() {
-                    const newLine = {
-                        line_id: this.lines.length + 1,
-                        name: 'New Line',
-                        line_color: '#' + Math.floor(Math.random()*16777215).toString(16),
-                        branches: []
-                    };
-                    this.lines.push(newLine);
-                    this.activeTab = this.lines.length - 1;
-                },
-                cloneLine(lineIndex) {
-                    const original = this.lines[lineIndex];
-                    if (!original) return;
-
-                    const cloned = this.deepClone(original);
-                    cloned.line_id = this.nextUniqueLineId();
-                    cloned.name = this.nextUniqueLineName(original.name);
-
-                    this.lines.splice(lineIndex + 1, 0, cloned);
-                    this.activeTab = lineIndex + 1;
-                },
-                requestDeleteLine(lineIndex) {
-                    const lineName = this.lines[lineIndex].name || `Line ${lineIndex + 1}`;
-                    this.confirmModal = {
-                        show: true,
-                        message: `Are you sure you want to delete "${lineName}"? This will remove the entire line and all its branches and stations.`,
-                        pendingDelete: { type: 'line', lineIndex }
-                    };
-                },
-                requestDeleteBranch(lineIndex, branchIndex) {
-                    const lineName = this.lines[lineIndex].name || `Line ${lineIndex + 1}`;
-                    this.confirmModal = {
-                        show: true,
-                        message: `Are you sure you want to delete Branch ${branchIndex + 1} of "${lineName}"? All stations in this branch will be removed.`,
-                        pendingDelete: { type: 'branch', lineIndex, branchIndex }
-                    };
-                },
-                requestDeleteStation(lineIndex, branchIndex, stationIndex) {
-                    const stationName = this.lines[lineIndex].branches[branchIndex].stations[stationIndex].name || 'this station';
-                    this.confirmModal = {
-                        show: true,
-                        message: `Are you sure you want to delete the station "${stationName}"?`,
-                        pendingDelete: { type: 'station', lineIndex, branchIndex, stationIndex }
-                    };
-                },
-                requestDeleteCheckpoint(lineIndex, branchIndex, stationIndex, checkpointIndex) {
-                    this.confirmModal = {
-                        show: true,
-                        message: `Are you sure you want to delete Checkpoint ${checkpointIndex + 1}?`,
-                        pendingDelete: { type: 'checkpoint', lineIndex, branchIndex, stationIndex, checkpointIndex }
-                    };
-                },
-                confirmDelete() {
-                    const p = this.confirmModal.pendingDelete;
-                    if (!p) return;
-                    if (p.type === 'line') this.deleteLine(p.lineIndex);
-                    else if (p.type === 'branch') this.deleteBranch(p.lineIndex, p.branchIndex);
-                    else if (p.type === 'station') this.deleteStation(p.lineIndex, p.branchIndex, p.stationIndex);
-                    else if (p.type === 'checkpoint') this.deleteCheckpoint(p.lineIndex, p.branchIndex, p.stationIndex, p.checkpointIndex);
-                    this.confirmModal = { show: false, message: '', pendingDelete: null };
-                },
-                cancelDelete() {
-                    this.confirmModal = { show: false, message: '', pendingDelete: null };
-                },
-                deleteLine(lineIndex) {
-                    this.lines.splice(lineIndex, 1);
-                    if (this.activeTab >= this.lines.length && this.activeTab > 0) {
-                        this.activeTab = this.lines.length - 1;
-                    }
-                },
-                addBranch(lineIndex) {
-                    this.lines[lineIndex].branches.push({
-                        branch_id: this.lines[lineIndex].branches.length,
-                        SPAWN_EVERY: 300,
-                        offset_time: 0,
-                        stations: []
-                    });
-                    this.setActiveBranchTab(lineIndex, this.lines[lineIndex].branches.length - 1);
-                },
-                cloneBranch(lineIndex, branchIndex) {
-                    const line = this.lines[lineIndex];
-                    const original = line?.branches?.[branchIndex];
-                    if (!line || !original) return;
-
-                    const cloned = this.deepClone(original);
-                    cloned.branch_id = this.nextUniqueBranchId(lineIndex);
-
-                    line.branches.splice(branchIndex + 1, 0, cloned);
-                    this.setActiveBranchTab(lineIndex, branchIndex + 1);
-                },
-                deleteBranch(lineIndex, branchIndex) {
-                    this.lines[lineIndex].branches.splice(branchIndex, 1);
-                    if (this.getActiveBranchTab(lineIndex) >= this.lines[lineIndex].branches.length && this.getActiveBranchTab(lineIndex) > 0) {
-                        this.setActiveBranchTab(lineIndex, this.lines[lineIndex].branches.length - 1);
-                    }
-                },
-                updateicon(lineIndex){
-                    this.lines[lineIndex].icon = generate_train_icon_2(this.lines[lineIndex].markertype, this.lines[lineIndex].line_color, this.lines[lineIndex].label, this.lines[lineIndex].image);
-                    console.log(this.lines[lineIndex].icon);
-                },
-                addStation(lineIndex, branchIndex) {
-                    //the new station by default starts close to the last station.
-                    let branch_length = this.lines[lineIndex].branches[branchIndex].stations.length;
-                    let default_lat = 0, default_lng = 0;
-                    if(branch_length > 0){
-                        default_lat = this.lines[lineIndex].branches[branchIndex].stations[branch_length - 1].lat;
-                        default_lng = this.lines[lineIndex].branches[branchIndex].stations[branch_length - 1].lng;
-                    }else{
-                        default_lat = 22;
-                        default_lng = 140;
-                    }
-                    const newStation = {
-                        name: 'New Station',
-                        lat: default_lat,
-                        lng: default_lng,
-                        run: 90,
-                        dwell: 30
-                    };
-                    this.lines[lineIndex].branches[branchIndex].stations.push(newStation);
-                    const stationIndex = this.lines[lineIndex].branches[branchIndex].stations.length - 1;
-                    this.coordinateMode = { target: 'station', lineIndex, branchIndex, stationIndex };
-                },
-                deleteStation(lineIndex, branchIndex, stationIndex) {
-                    this.lines[lineIndex].branches[branchIndex].stations.splice(stationIndex, 1);
-                },
-                addCheckpoint(lineIndex, branchIndex, stationIndex) {
-                    const station = this.lines[lineIndex].branches[branchIndex].stations[stationIndex];
-                    if (!station.checkpoints) {
-                        station.checkpoints = [];
-                    }
-                    station.checkpoints.push({
-                        lat: station.lat,
-                        lng: station.lng,
-                        progress: 0.5
-                    });
-                    const checkpointIndex = station.checkpoints.length - 1;
-                    this.coordinateMode = { target: 'checkpoint', lineIndex, branchIndex, stationIndex, checkpointIndex };
-                },
-                deleteCheckpoint(lineIndex, branchIndex, stationIndex, checkpointIndex) {
-                    this.lines[lineIndex].branches[branchIndex].stations[stationIndex].checkpoints.splice(checkpointIndex, 1);
-                },
-                moveStationUp(lineIndex, branchIndex, stationIndex) {
-                    if (stationIndex <= 0) return;
-                    const stations = this.lines[lineIndex].branches[branchIndex].stations;
-                    const tmp = stations[stationIndex - 1];
-                    stations[stationIndex - 1] = stations[stationIndex];
-                    stations[stationIndex] = tmp;
-
-                    if (this.coordinateMode &&
-                        this.coordinateMode.lineIndex === lineIndex &&
-                        this.coordinateMode.branchIndex === branchIndex &&
-                        this.coordinateMode.target === 'station') {
-                        if (this.coordinateMode.stationIndex === stationIndex) this.coordinateMode.stationIndex = stationIndex - 1;
-                        else if (this.coordinateMode.stationIndex === stationIndex - 1) this.coordinateMode.stationIndex = stationIndex;
-                    }
-
-                    if (this.coordinateMode &&
-                        this.coordinateMode.lineIndex === lineIndex &&
-                        this.coordinateMode.branchIndex === branchIndex &&
-                        this.coordinateMode.target === 'checkpoint') {
-                        if (this.coordinateMode.stationIndex === stationIndex) this.coordinateMode.stationIndex = stationIndex - 1;
-                        else if (this.coordinateMode.stationIndex === stationIndex - 1) this.coordinateMode.stationIndex = stationIndex;
-                    }
-                    updateMap();
-                },
-                moveCheckpointUp(lineIndex, branchIndex, stationIndex, checkpointIndex) {
-                    if (checkpointIndex <= 0) return;
-                    const station = this.lines[lineIndex].branches[branchIndex].stations[stationIndex];
-                    if (!station.checkpoints || !Array.isArray(station.checkpoints)) return;
-                    const checkpoints = station.checkpoints;
-                    const tmp = checkpoints[checkpointIndex - 1];
-                    checkpoints[checkpointIndex - 1] = checkpoints[checkpointIndex];
-                    checkpoints[checkpointIndex] = tmp;
-
-                    if (this.coordinateMode &&
-                        this.coordinateMode.target === 'checkpoint' &&
-                        this.coordinateMode.lineIndex === lineIndex &&
-                        this.coordinateMode.branchIndex === branchIndex &&
-                        this.coordinateMode.stationIndex === stationIndex) {
-                        if (this.coordinateMode.checkpointIndex === checkpointIndex) this.coordinateMode.checkpointIndex = checkpointIndex - 1;
-                        else if (this.coordinateMode.checkpointIndex === checkpointIndex - 1) this.coordinateMode.checkpointIndex = checkpointIndex;
-                    }
-                    updateMap();
-                },
-
-                //calculation-based stuff
-                calculate_progress(lineIndex, branchIndex, stationIndex){
-                    let i = lineIndex;
-                    let j = branchIndex;
-                    let k = stationIndex;
-                    let this_station = this.lines[i].branches[j].stations[k];
-                    //only for stations with checkpoints
-                    if(!this_station.hasOwnProperty("checkpoints")){
-                        return;
-                    }
-                    if(this_station.checkpoints.length == 0){
-                        return;
-                    }
-                    let next_lat = 0;
-                    let next_lng = 0;
-                    //last station calculations
-                    if(k == this.lines[i].branches[j].stations.length - 1){
-                        if(this.lines[i].branches[j].hasOwnProperty("branch_type")){
-                            if(this.lines[i].branches[j].branch_type == "circular"){
-                                next_lat = this.lines[i].branches[j].stations[0].lat;
-                                next_lng = this.lines[i].branches[j].stations[0].lng;
-                            }else{
-                                //no point in checkpoints if it's not a circular line
-                                return;
-                            }
-                        }
-                    }else{
-                        next_lat = this.lines[i].branches[j].stations[k + 1].lat;
-                        next_lng = this.lines[i].branches[j].stations[k + 1].lng;
-                    }
-
-                    let got_array = autoprogress(this_station, next_lat, next_lng);
-                    //wow 4 variables lol
-                    for(let l = 0; l < this_station.checkpoints.length; l++){
-                        this.lines[i].branches[j].stations[k].checkpoints[l].progress = got_array[l];
-                    }
-                },
-                calculate_allprogresses(lineIndex, branchIndex){
-                    for(let i = 0; i < this.lines[lineIndex].branches[branchIndex].stations.length; i++){
-                        this.calculate_progress(lineIndex, branchIndex, i);
-                    }
-                },
-                calculate_traveltimes(lineIndex, branchIndex){
-                    let i = lineIndex;
-                    let j = branchIndex;
-                    let this_branch = this.lines[i].branches[j];
-
-                    //make sure there is a speed and acceleration defined. Otherwise, define it manualy.
-                    if(!this.lines[i].hasOwnProperty("max_speed")){
-                        this.lines[i].max_speed = 20;
-                    }
-                    if(!this.lines[i].hasOwnProperty("acceleration")){
-                        this.lines[i].acceleration = 0.8;
-                    }
-
-                    let circularornot = false;
-                    if(this_branch.hasOwnProperty("branch_type")){
-                        if(this_branch.branch_type == "circular"){
-                            circularornot = true;
-                        }
-                    }
-                    let got_array = autotime(this.lines[i].branches[j].stations, this.lines[i].max_speed, this.lines[i].acceleration, circularornot);
-                    console.log(got_array);
-                    //got_array will be 1 shorter than stations if the line isn't circular.
-                    for(let k = 0; k < got_array.length; k++){
-                        this.lines[i].branches[j].stations[k].run = Math.ceil(got_array[k]);
-                    }
-                },
-
-
                 loadSampleData() {
                     const sampleData = [
                         {

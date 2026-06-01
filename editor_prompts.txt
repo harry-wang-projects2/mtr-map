@@ -1,3 +1,8 @@
 Make a separate js file called lines.js containing all of the functions that modify the object this.lines in editor_version1/editor_version1.html. Examples include the functions that add, delete, or modify items such as lines, branches, stations, and checkpoints. Also move utility functions such as nextUniqueLineId, nextUniqueBranchId, and nextUniqueLineName to lines.js. 
 
 Then, in @editor_version/editor_version1.html, let the buttons/functions call the functions in the lines.js. This should shorten editor_version1.html. 
+
+
+
+In editor_version1.html, add the following keys:
+- If I press D, then the highlighted station shifts to the next station in the branch of the currently highlighted station. If the thing currently being highlighted is a checkpoint, then change the highlighted station to the 
