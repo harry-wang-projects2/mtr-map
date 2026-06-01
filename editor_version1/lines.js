@@ -177,7 +177,7 @@ export function addCheckpoint(vm, lineIndex, branchIndex, stationIndex) {
     station.checkpoints.push({
         lat: station.lat,
         lng: station.lng,
-        progress: 0.5
+        progress: 1
     });
     const checkpointIndex = station.checkpoints.length - 1;
     vm.coordinateMode = { target: 'checkpoint', lineIndex, branchIndex, stationIndex, checkpointIndex };
