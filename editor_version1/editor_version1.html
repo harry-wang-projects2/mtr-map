@@ -116,14 +116,44 @@
                                         </div>
                                         <div class="parameter-group">
                                             <label>Branch Type:</label>
-                                            <select v-model="branch.branch_type">
+                                            <select v-model="branch.branch_type" @change="onBranchTypeChange(lineIndex, branchIndex)">
                                                 <option value="normal">normal</option>
                                                 <option value="circular">circular</option>
+                                                <option value="unidirectional">unidirectional</option>
                                             </select>
                                         </div>
                                         <div class="parameter-group">
                                             <label>Offset Time:</label>
                                             <input type="number" v-model="branch.offset_time">
+                                        </div>
+                                    </div>
+                                    <div v-if="branch.branch_type === 'unidirectional'" class="parameter-row">
+                                        <div class="parameter-group">
+                                            <label>Scheduling:</label>
+                                            <select v-model="branch.scheduling">
+                                                <option value="scheduled">scheduled</option>
+                                                <option value="scheduled_frequencies">scheduled_frequencies</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div v-if="branch.branch_type === 'unidirectional'">
+                                        <div v-for="(entry, entryIndex) in (branch.timetable || [])" :key="entryIndex" class="parameter-row">
+                                            <div class="parameter-group">
+                                                <label>Time:</label>
+                                                <input type="time" v-model="entry.time" @change="sortTimetable(lineIndex, branchIndex)">
+                                            </div>
+                                            <div v-if="branch.scheduling === 'scheduled_frequencies'" class="parameter-group">
+                                                <label>Frequency:</label>
+                                                <input type="number" v-model.number="entry.frequency">
+                                            </div>
+                                            <div class="parameter-group">
+                                                <button @click="deleteTimetableEntry(lineIndex, branchIndex, entryIndex)" class="delete">Delete</button>
+                                            </div>
+                                        </div>
+                                        <div class="parameter-row">
+                                            <div class="parameter-group">
+                                                <button @click="addTimetableEntry(lineIndex, branchIndex)" class="add">Add Time</button>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="parameter-row">
@@ -914,6 +944,28 @@
                     //calculate everything
                     if(event.key === 'l' || event.key === 'L') {
                         this.exportJSON();
+                    }
+                },
+                onBranchTypeChange(lineIndex, branchIndex) {
+                    const branch = this.lines[lineIndex].branches[branchIndex];
+                    if (branch.branch_type === 'unidirectional') {
+                        if (!branch.scheduling) branch.scheduling = 'scheduled';
+                        if (!branch.timetable) branch.timetable = [];
+                    }
+                },
+                addTimetableEntry(lineIndex, branchIndex) {
+                    const branch = this.lines[lineIndex].branches[branchIndex];
+                    if (!branch.timetable) branch.timetable = [];
+                    branch.timetable.push({ time: "00:00", frequency: 1 });
+                    this.sortTimetable(lineIndex, branchIndex);
+                },
+                deleteTimetableEntry(lineIndex, branchIndex, entryIndex) {
+                    this.lines[lineIndex].branches[branchIndex].timetable.splice(entryIndex, 1);
+                },
+                sortTimetable(lineIndex, branchIndex) {
+                    const branch = this.lines[lineIndex].branches[branchIndex];
+                    if (branch.timetable) {
+                        branch.timetable.sort((a, b) => a.time.localeCompare(b.time));
                     }
                 }
             }
