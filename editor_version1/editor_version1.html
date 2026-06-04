@@ -120,6 +120,7 @@
                                                 <option value="normal">normal</option>
                                                 <option value="circular">circular</option>
                                                 <option value="unidirectional">unidirectional</option>
+                                                <option value="bidirectional">bidirectional</option>
                                             </select>
                                         </div>
                                         <div class="parameter-group">
@@ -127,7 +128,7 @@
                                             <input type="number" v-model="branch.offset_time">
                                         </div>
                                     </div>
-                                    <div v-if="branch.branch_type === 'unidirectional'" class="parameter-row">
+                                    <div v-if="branch.branch_type === 'unidirectional' || branch.branch_type === 'bidirectional'" class="parameter-row">
                                         <div class="parameter-group">
                                             <label>Scheduling:</label>
                                             <select v-model="branch.scheduling">
@@ -136,7 +137,7 @@
                                             </select>
                                         </div>
                                     </div>
-                                    <div v-if="branch.branch_type === 'unidirectional'">
+                                    <div v-if="branch.branch_type === 'unidirectional' || branch.branch_type === 'bidirectional'">
                                         <div v-for="(entry, entryIndex) in (branch.timetable || [])" :key="entryIndex" class="parameter-row">
                                             <div class="parameter-group">
                                                 <label>Time:</label>
@@ -948,7 +949,7 @@
                 },
                 onBranchTypeChange(lineIndex, branchIndex) {
                     const branch = this.lines[lineIndex].branches[branchIndex];
-                    if (branch.branch_type === 'unidirectional') {
+                    if (branch.branch_type === 'unidirectional' || branch.branch_type === 'bidirectional') {
                         if (!branch.scheduling) branch.scheduling = 'scheduled';
                         if (!branch.timetable) branch.timetable = [];
                     }
