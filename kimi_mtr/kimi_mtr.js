@@ -390,9 +390,9 @@ function playAnimationFrame(time){
   for(let i = 0; i < lines.length; i++){
     const lineCfg = lines[i];
     const lineMeta = animationTrajectories[i] || [];
-    //const train_image = lineCfg.hasOwnProperty("image") ? lineCfg.image : "";
-    //const markertype = lineCfg.hasOwnProperty("markertype") ? lineCfg.markertype : "";
-    //const line_icon = generate_train_icon(markertype, lineCfg.line_color, lineCfg.label, train_image);
+    const train_image = lineCfg.hasOwnProperty("image") ? lineCfg.image : "";
+    const markertype = lineCfg.hasOwnProperty("markertype") ? lineCfg.markertype : "";
+    const line_icon = generate_train_icon(markertype, lineCfg.line_color, lineCfg.label, train_image);
 
     let trainsOnThisLine = 0;
 
@@ -403,17 +403,76 @@ function playAnimationFrame(time){
       const { trajectory, journeyTimeSeconds, initialProgresses } = branchMeta;
       if(!trajectory || journeyTimeSeconds <= 0) continue;
 
-      for(let k = 0; k < initialProgresses.length; k++){
-        const timeProgress = (initialProgresses[k] + elapsedSeconds) % journeyTimeSeconds;
-        const pos = trajectory[timeProgress];
-        if(!pos) continue;
 
-        /*
-        const marker = L.marker([pos.lat, pos.lng], { icon: line_icon }).addTo(map);
-        playbackMarkers.push(marker);
-        */
-        trainsOnThisLine++;
-        branchMeta.markers[k].setLngLat([pos.lng, pos.lat]);
+      if(lines[i].branches[b].branch_type == "unidirectional"){
+        const time_value = elapsedSeconds;
+        //Once a minute: Update the queue.
+        if(elapsedSeconds % 60 == 0){
+          //step 1: Add new trains.
+          let add_finished = false;
+          while (true){
+            //break out if this train isn't active yet
+            if(elapsedSeconds < lines[i].branches[b].spawn_times[lines[i].branches[b].head]){
+              break;
+            }
+
+            //add the marker
+            const pos = trajectory[0];
+            const el = generate_train_icon(markertype, lineCfg.line_color, lineCfg.label, train_image);
+            const marker = new maplibregl.Marker({element: el, anchor:  'center'}).setLngLat([pos.lng, pos.lat]).addTo(map);
+            playbackMarkers.push(marker);
+
+            animationTrajectories[i][b].markers[ lines[i].branches[b].head] = marker;
+
+            //head = the next train to be added.
+            lines[i].branches[b].head++;
+            lines[i].branches[b].markerhead++;
+
+          }
+
+          //step 2: Remove old trains.
+          let del_finished = false;
+          while (true){
+            if(lines[i].branches[b].tail > lines[i].branches[b].head){
+              break;
+            }
+            //break out if this train is still active
+            if(elapsedSeconds - (lines[i].branches[b].spawn_times[lines[i].branches[b].tail] + lines[i].branches[b].travel_time) < 0){
+              break;
+            }
+
+            console.log(lines[i].branches[b])
+            console.log(animationTrajectories[i][b].markers)
+            animationTrajectories[i][b].markers[ lines[i].branches[b].tail].remove();
+
+
+            //tail = the next train to be removed
+            lines[i].branches[b].tail++;
+            lines[i].branches[b].markertail++;
+          }
+        }
+
+        //display the trains in the queue.
+        for(let k = lines[i].branches[b].tail; k < lines[i].branches[b].head; k++){
+          const timeProgress = (lines[i].branches[b].spawn_times[k] + elapsedSeconds) % journeyTimeSeconds;
+          const pos = trajectory[timeProgress];
+          if(!pos) continue;
+
+          branchMeta.markers[k].setLngLat([pos.lng, pos.lat]);
+        }
+      }else{
+        for(let k = 0; k < initialProgresses.length; k++){
+          const timeProgress = (initialProgresses[k] + elapsedSeconds) % journeyTimeSeconds;
+          const pos = trajectory[timeProgress];
+          if(!pos) continue;
+
+          /*
+          const marker = L.marker([pos.lat, pos.lng], { icon:   line_icon }).addTo(map);
+          playbackMarkers.push(marker);
+          */
+          trainsOnThisLine++;
+          branchMeta.markers[k].setLngLat([pos.lng, pos.lat]);
+        }
       }
     }
 
@@ -466,29 +525,30 @@ function startPlayback(playbackSpeed = 1, resetTime = true){
 
       animationTrajectories[i][b].markers = [];
   
-      if(lines[i].branches[j].branch_type == "unidirectional"){
+      if(lines[i].branches[b].branch_type == "unidirectional"){
         //unidirectional lines. The markers are in a queue.
         animationTrajectories[i][b].markerhead = 0;
         animationTrajectories[i][b].markertail = 0;
 
         //start iterating. Start with head. Add the markers first.
         //no train can despawn at time 0, so no need to pop anything.
-        let reached = false;
-        while(!reached){
-          if(lines[i].branches[j].spawn_times[ animationTrajectories[i][b].markerhead] != 0){
-            reached = true;
+        while(true){
+          if(lines[i].branches[b].spawn_times[ animationTrajectories[i][b].markerhead] != 0){
+            break;
           }
-          const pos = trajectory[timeProgress];
+          const pos = trajectory[0];
           const el = generate_train_icon(markertype, lineCfg.line_color, lineCfg.label, train_image);
           const marker = new maplibregl.Marker({element: el, anchor:  'center'}).setLngLat([pos.lng, pos.lat]).addTo(map);
           playbackMarkers.push(marker);
           
           //add the marker
           animationTrajectories[i][b].markers[ animationTrajectories[i][b].markerhead] = marker;
-          markerhead++;
+          animationTrajectories[i][b].markerhead++;
 
           //change the head of spawn progresses.
-          lines[i].branches[j].head++;
+          lines[i].branches[b].head++;
+
+          trainsOnThisLine++;
         }
 
       }else{
@@ -622,7 +682,7 @@ document.getElementById('generateBtn')?.addEventListener('click', async () => {
     });
     
 
-    //post generation - list out the spawn complete times for trains
+    //post generation (for unidirectioanl) - list out the spawn complete times for trains
     for(let i = 0; i < lines.length; i++){
       for(let j = 0; j < lines[i].branches.length; j++){
         if(!lines[i].branches[j].hasOwnProperty("branch_type")){
@@ -632,6 +692,7 @@ document.getElementById('generateBtn')?.addEventListener('click', async () => {
           continue;
         }
         let travel_time = animationTrajectories[i][j].trajectory.length;
+        lines[i].branches[j].travel_time = travel_time;
         for(let k = 0; k < lines[i].branches[j].spawn_times.length; k++){
           console.log("finished:")
           console.log(lines[i].branches[j].spawn_times[k] + travel_time);
