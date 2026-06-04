@@ -696,7 +696,7 @@ document.getElementById('generateBtn')?.addEventListener('click', async () => {
         for(let k = 0; k < lines[i].branches[j].spawn_times.length; k++){
           console.log("finished:")
           console.log(lines[i].branches[j].spawn_times[k] + travel_time);
-          lines[i].branches[j].events[lines[i].branches[j].spawn_times[k] + travel_time] = 1;
+          lines[i].branches[j].events[Math.floor((lines[i].branches[j].spawn_times[k] + travel_time)/60)] = 1;
         }
       }
     }
@@ -806,6 +806,9 @@ function process_lines(){
       if(!lines[i].branches[j].hasOwnProperty("branch_type")){
         continue;
       }
+      if(!lines[i].branches[j].hasOwnProperty("scheduling")){
+        continue;
+      }
       if(lines[i].branches[j].branch_type != "unidirectional"){
         continue;
       }
@@ -820,7 +823,7 @@ function process_lines(){
 
       //time array - logs the events.
       //todo: Make this more efficient. Can reduce to a 1440 length array. Make it so that spawning/despawning can only be accurate to the minute.
-      lines[i].branches[j].events = new Array(86400).fill(0);
+      lines[i].branches[j].events = new Array(1440).fill(0);
 
       //the range of trains that are active
       //note: head = the newest train, tail = the oldest train.
@@ -828,15 +831,42 @@ function process_lines(){
       lines[i].branches[j].head = 0;
       lines[i].branches[j].tail = 0;
 
-      for(let k = 0; k < lines[i].branches[j].timetable.length; k++){
-        console.log(lines[i].branches[j].timetable[k].time + ':00');
-        lines[i].branches[j].spawn_times[k] = parseTime24(lines[i].branches[j].timetable[k].time + ':00');
+      if(lines[i].branches[j].scheduling == "scheduled_frequencies"){
+        //first loop: Record down the begin times of each
+
+        //need an extra array to store when the first train of each frequency spawns.
+        lines[i].branches[j].first_times = [];
+        for(let k = 0; k < lines[i].branches[j].timetable.length; k++){
+          console.log(lines[i].branches[j].timetable[k].time + ':00');
+          begin_time = parseTime24(lines[i]. branches[j].timetable[k].time + ':00');
+
+          lines[i].branches[j].first_times[k] = begin_time
+        }
+        //now, for each interval, generate all of the spawns.
+        for(let k = 0; k < lines[i].branches[j].timetable.length; k++){
+          console.log(lines[i].branches[j].timetable[k].time + ':00');
+          begin_time = parseTime24(lines[i]. branches[j].timetable[k].time + ':00');
+
+          //loop across all of the times between this time and hte next.
+          lines[i].branches[j].spawn_times[k] = begin_time
+
+          //haven't considered trains starting at 23:00 and ending on the next day yet. For now, assume that they despawn at 23:59.
+          lines[i].branches[j].events[Math.floor((lines[i].branches[j]. spawn_times[k])/60)] = 1;
+
+          //since despawn time calculation requires calculating travel time, do this in the generation phase.
+          //despawn_time = max(lines[i].branches[j].spawn_times[k] +  travel_time, 86399);
+        }
+      }else{
+        for(let k = 0; k < lines[i].branches[j].timetable.length; k++){
+          console.log(lines[i].branches[j].timetable[k].time + ':00');
+          lines[i].branches[j].spawn_times[k] = parseTime24(lines[i]. branches[j].timetable[k].time + ':00');
 
         //haven't considered trains starting at 23:00 and ending on the next day yet. For now, assume that they despawn at 23:59.
-        lines[i].branches[j].events[lines[i].branches[j].spawn_times[k]] = 1;
+          lines[i].branches[j].events[Math.floor((lines[i].branches[j]. spawn_times[k])/60)] = 1;
 
-        //since despawn time calculation requires calculating travel time, do this in the generation phase.
-        //despawn_time = max(lines[i].branches[j].spawn_times[k] + travel_time, 86399);
+          //since despawn time calculation requires calculating travel time, do this in the generation phase.
+          //despawn_time = max(lines[i].branches[j].spawn_times[k] +  travel_time, 86399);
+        }
       }
       console.log(lines[i].branches[j].spawn_times);
     }
