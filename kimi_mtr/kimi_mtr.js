@@ -875,6 +875,23 @@ document.getElementById('setTimeBtn')?.addEventListener('click', () => {
     return;
   }
   currentPlaybackTime = h * 3600 + m * 60 + s;
+
+  //for scheduled_frequencies, reset the queue. We can just reset the head and tail back to 0 and redo it.
+  //also, delete all trains.
+  for(let i = 0; i < lines.length; i++){
+    for(let j = 0; j < lines[i].branches.length; j++){
+      if(!lines[i].branches[j].hasOwnProperty("branch_type")){
+        continue;
+      }
+      if(lines[i].branches[j].branch_type === "unidirectional" || lines[i].branches[j].branch_type === "bidirectional"){
+        lines[i].branches[j].head = 0;
+        lines[i].branches[j].tail = 0;
+        for(let k = 0; k < animationTrajectories[i][j].markers.length; k++){
+          animationTrajectories[i][j].markers[k].remove();
+        }
+      }
+    }
+  }
 });
 
 // startClock(); // Disabled - using new generation/playback system
