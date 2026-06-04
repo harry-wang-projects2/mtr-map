@@ -411,10 +411,16 @@ function playAnimationFrame(time){
           //step 1: Add new trains.
           let add_finished = false;
           while (true){
+            //break out of the end is reached
+            if(lines[i].branches[b].head >= lines[i].branches[b].spawn_times.length){
+              break;
+            }
+
             //break out if this train isn't active yet
             if(elapsedSeconds < lines[i].branches[b].spawn_times[lines[i].branches[b].head]){
               break;
             }
+            console.log("adding");
 
             //add the marker
             const pos = trajectory[0];
@@ -433,7 +439,7 @@ function playAnimationFrame(time){
           //step 2: Remove old trains.
           let del_finished = false;
           while (true){
-            if(lines[i].branches[b].tail > lines[i].branches[b].head){
+            if(lines[i].branches[b].tail >= lines[i].branches[b].head){
               break;
             }
             //break out if this train is still active
@@ -441,8 +447,7 @@ function playAnimationFrame(time){
               break;
             }
 
-            console.log(lines[i].branches[b])
-            console.log(animationTrajectories[i][b].markers)
+            console.log(lines[i].name);
             animationTrajectories[i][b].markers[ lines[i].branches[b].tail].remove();
 
 
@@ -452,9 +457,11 @@ function playAnimationFrame(time){
           }
         }
 
+
+
         //display the trains in the queue.
         for(let k = lines[i].branches[b].tail; k < lines[i].branches[b].head; k++){
-          const timeProgress = (lines[i].branches[b].spawn_times[k] + elapsedSeconds) % journeyTimeSeconds;
+          const timeProgress = (elapsedSeconds - lines[i].branches[b].spawn_times[k]) % journeyTimeSeconds;
           const pos = trajectory[timeProgress];
           if(!pos) continue;
 
@@ -850,15 +857,18 @@ function process_lines(){
             next_time = lines[i].branches[j].first_times[k+1];
           }
 
-          for(let current_time = begin_time; current_time + lines[i].branches[j].timetable[k].frequency < next_time; current_time += lines[i].branches[j].timetable[k].frequency){
+          let seconds_frequency = Math.ceil(lines[i].branches[j].timetable[k].frequency * 60);
+
+          for(let current_time = begin_time; current_time + lines[i].branches[j].timetable[k].frequency < next_time; current_time += seconds_frequency){
             lines[i].branches[j].spawn_times.push(current_time);
             
             //haven't considered trains starting at 23:00 and ending on the next day yet. For now, assume that they despawn at 23:59.
             lines[i].branches[j].events[Math.floor((current_time)/60)] = 1;
-
             //since despawn time calculation requires calculating travel time, do this in the generation phase.
             //despawn_time = max(lines[i].branches[j].spawn_times[k] +  travel_time, 86399);
           }
+          console.log("scheduled frequency timetable:")
+          console.log(lines[i].branches[j].spawn_times);
 
         }
       }else{
@@ -873,7 +883,6 @@ function process_lines(){
           //despawn_time = max(lines[i].branches[j].spawn_times[k] +  travel_time, 86399);
         }
       }
-      console.log(lines[i].branches[j].spawn_times);
     }
   }
 
