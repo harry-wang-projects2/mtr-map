@@ -214,7 +214,6 @@ function reset_lines(){
       draw_branchroute(branch, lines[i].line_color);
 
       branch.trains = [];
-      branch.spawnEnabled = true;
       branch.firstTrainFinished = false;
       branch.lastspawn = 0;
     }
@@ -319,7 +318,6 @@ function restart(){
       const branch = line.branches[b];
       branch.trains.forEach(t=>t.remove());
       branch.trains.length = 0;
-      branch.spawnEnabled = true;
       branch.firstTrainFinished = false;
       branch.lastspawn = 0;
     }
@@ -343,51 +341,6 @@ function remove_decimals(){
     }
   }
 }
-
-
-/* -------------------- Helper function to calculate when all spawning finishes ---- */
-/*
-function calculateSpawnCompletionTime(){
-  let maxSpawnTime = 0;
-  
-  for(let i = 0; i < lines.length; i++){
-    const line = lines[i];
-    for(let b = 0; b < line.branches.length; b++){
-      const branch = line.branches[b];
-      
-      // Calculate total journey time for one complete round trip
-      let totalJourneyTime = 0;
-      for(let s = 0; s < branch.stations.length; s++){
-        totalJourneyTime += branch.stations[s].run + branch.stations[s].dwell;
-      }
-      
-      // Time when first train completes journey = offset + journey time
-      const firstTrainCompletionTime = branch.offset_time + totalJourneyTime;
-      
-      maxSpawnTime = Math.max(maxSpawnTime, firstTrainCompletionTime);
-    }
-  }
-  
-  return maxSpawnTime;
-}
-*/
-
-
-/* -------------------- Helper function to check if all branches have stopped spawning ---- */
-/*
-function allBranchesStoppedSpawning(){
-  for(let i = 0; i < lines.length; i++){
-    const line = lines[i];
-    for(let b = 0; b < line.branches.length; b++){
-      const branch = line.branches[b];
-      if(branch.spawnEnabled){
-        return false;
-      }
-    }
-  }
-  return true;
-}
-*/
 
 let spawn_completed_time = 0;
 

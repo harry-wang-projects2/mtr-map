@@ -202,9 +202,11 @@ class Train {
           this.idx += this.dir;
           if(this.idx === stations.length || this.dir === -1){
             this.returned = true;
+            /*
             if(!branch.firstTrainFinished){
               branch.firstTrainFinished = true;
             }
+            */
             if(this.idx === stations.length){
               this.idx = 0;
             }else if(this.idx === -1){
@@ -225,15 +227,15 @@ class Train {
             //if it went back to startdir, it means that it completed a loop.
             if (this.dir === this.startDir){
               this.returned = true;
+              /*
               if (!branch.firstTrainFinished){ 
                 branch.firstTrainFinished = true; 
-                /*
                 branch.spawnEnabled=false; 
                 //delete the last train as 2 trains will look close together.
                 branch.trains[branch.trains.length-1].marker.remove();
                 branch.trains.pop();
-                */
               }
+              */
             }
             /*
             if (this.dir === -1 && this.idx === stations.length-1){ // finished CCW loop
@@ -246,10 +248,12 @@ class Train {
         this.dwellProgress = this.segmentProgress - leg + 1;
         this.segmentProgress = 0;
       }
+      /*
       //reduce refresh rate as it shouldn't exceed 60 fps
       if(refreshcoords == 1 && this.marker){
         this.marker.setLatLng(this.latlng());
       }
+      */
     }else{
       //dwelling
       if(this.dwellProgress < dwell){
@@ -262,6 +266,7 @@ class Train {
           this.finishedtraverse = true;
         }
 
+        /*
         // -- loop-completion logic (see #2) --
         if (branch.firstTrainFinished && branch.spawnEnabled){
           branch.spawnEnabled=false; 
@@ -272,6 +277,7 @@ class Train {
           }
           branch.trains.pop();
         }
+        */
         this.segmentProgress = this.dwellProgress - dwell + 1;
       }
     }
@@ -369,11 +375,11 @@ function generateAnimation(onProgress = null){
           const spawnEvery = branch.SPAWN_EVERY || 0;
 
           // Disable any spawn bookkeeping during generation.
-          branch.spawnEnabled = false;
-          branch.firstTrainFinished = false;
+          //branch.spawnEnabled = false;
+          //branch.firstTrainFinished = false;
           branch.lastspawn = 0;
-          branch.trains = branch.trains || [];
-          branch.trains.length = 0;
+          //branch.trains = branch.trains || [];
+          //branch.trains.length = 0;
 
           // Create a single train trajectory for this branch.
           const line_type = (branch.hasOwnProperty("branch_type") && branch.branch_type === "circular") ? "circular" : "normal";
