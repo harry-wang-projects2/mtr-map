@@ -593,6 +593,25 @@ document.getElementById('generateBtn')?.addEventListener('click', async () => {
       }
     });
     
+
+    //post generation - list out the spawn complete times for trains
+    for(let i = 0; i < lines.length; i++){
+      for(let j = 0; j < lines[i].branches.length; j++){
+        if(!lines[i].branches[j].hasOwnProperty("branch_type")){
+          continue;
+        }
+        if(lines[i].branches[j].branch_type != "unidirectional"){
+          continue;
+        }
+        let travel_time = animationTrajectories[i][j].trajectory.length;
+        for(let k = 0; k < lines[i].branches[j].spawn_times.length; k++){
+          console.log("finished:")
+          console.log(lines[i].branches[j].spawn_times[k] + travel_time);
+          lines[i].branches[j].events[lines[i].branches[j].spawn_times[k] + travel_time] = 1;
+        }
+      }
+    }
+
     generateBtn.disabled = false;
     generateBtn.textContent = 'Generate Animation';
     //animationPlaybackDurationSeconds = duration;
@@ -701,6 +720,11 @@ function process_lines(){
       if(lines[i].branches[j].branch_type != "unidirectional"){
         continue;
       }
+
+      //sort the times just in case
+      lines[i].branches[j].timetable = lines[i].branches[j].timetable.sort((a, b) => a.time.localeCompare(b.time));
+      console.log("sorted:")
+      console.log(lines[i].branches[j].timetable);
       
       //array of times in seconds since 00:00:00
       lines[i].branches[j].spawn_times = [];
