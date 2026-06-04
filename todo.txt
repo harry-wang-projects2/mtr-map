@@ -28,8 +28,6 @@ Change the rolling stock thingy (the images on the trains. The rolling stock are
 Branch synchronisation: Maybe consider keeping the spawn frequency uniform for a branch? (i.e. modify it slightly such that the gap between each train is equivalent.)
 
 Editor:
-- To reduce the amount of lines, make one javascript file called lines.js consisting of the functions that edit the lines object. The main html file functions should just be handlers that call functions in the new javascript file. Just like the MVC structure. The main UI should only consist of functions that call other functions in other files.
-- The function should take in the “lines” object. Since the object is a reference, it can just edit the lines on the spot.
 - Make the map/JSON display/left editing page separate components?
 
 
@@ -64,6 +62,8 @@ Add settings bar (e.g. hiding the lines, enabling/disabling certain lines in the
 
 
 Finished:
+- To reduce the amount of lines, make one javascript file called lines.js consisting of the functions that edit the lines object. The main html file functions should just be handlers that call functions in the new javascript file. Just like the MVC structure. The main UI should only consist of functions that call other functions in other files.
+- The function should take in the “lines” object. Since the object is a reference, it can just edit the lines on the spot.
 Idea: Make the generation stage a separate file. It should be a function that takes in the lines json and returns the array of the train positions vs time.
 Display the label next to the line in the editor.
 Dragging stations around (on the list, not on the map) --> made the move up function, even better as it isn't weird.

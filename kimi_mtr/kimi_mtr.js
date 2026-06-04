@@ -796,6 +796,26 @@ function normalizeLineIds() {
 }
 
 
+//split bidirectional branches into opposite-facing unidirectional branches
+function split_bidirectional(){
+  for(let i = 0; i < lines.length; i++){
+    for(let j = 0; j < lines[i].branches.length; j++){
+      if(!lines[i].branches[j].hasOwnProperty("branch_type")){
+        continue;
+      }
+      if(!lines[i].branches[j].hasOwnProperty("scheduling")){
+        continue;
+      }
+      if(lines[i].branches[j].branch_type != "bidirectional"){
+        continue;
+      }
+
+      //split the branch.
+    }
+  }
+}
+
+
 //time parsing
 
 function parseTime24(timeStr) {
@@ -921,6 +941,7 @@ function loadJsonFile(replace) {
         reset_lines();
 
         //do the processing here. For unidirectional lines.
+        split_bidirectional();
         process_lines();
 
         setJsonLoadStatus(replace ? 'Lines replaced.' : 'Lines appended.');

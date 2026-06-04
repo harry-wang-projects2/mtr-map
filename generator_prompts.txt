@@ -1,2 +1,10 @@
 
 Currently, the program uses Leaflet.js to display the markers and play the animation. Switch the mapping library to Maplibre. Since animation-generator.js only generates an array of coordinates for the trains every second, it doesn't draw anything. Hence, don't edit animation-generator.js.
+
+Fill in the function "split_bidirectional" in @kimi_mtr/kimi_mtr.js . It cycles through all branches of all lines, and searches for branches of type "bidirectional". For "bidirectional" branches, it should split that branch into two "unidirectional" branches. Specifically, turn the original branch into a "unidirectional" branch and clone a flipped version of that "unidirectional" branch. To flip a branch involves the following:
+- Keep the timetable and branch_type the same.
+- Reverse the order of the stations. If the original stations were in the order A, B, C, D, then change it to D, C, B, A.
+- Shift the station the checkpoints belong to. If the original stations were in the order A, B, C, D and the flipped stations are in the order D, C, B, A, then A's checkpoints should be transferred to B, B's checkpoints should be transferred to C, and so on.
+- Flip the order of each list of checkpoints. If the checkpoints of a station were initially in the order E, F, G, then the order should be changed to G, F, E. Furthermore, the progress of each checkpoint should be updated to 1 - [original progress].
+
+Remember to add the newly cloned branch to the list of branches in the line it belongs to.
