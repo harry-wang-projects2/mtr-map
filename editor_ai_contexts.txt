@@ -7,8 +7,6 @@ Rules:
 Only do the things specified in the prompt. Do not change parts of the code that I did not tell you to change.
 
 Task:
-In @editor_version1/editor_version1.html, For the branch type input for each branch of each line (i.e. the input corresponding to branch.branch_type), add an option called "unidirectional". When this option gets selected, more inputs get shown for that branch: 
-- One is a "select" bar that allows the user to select between "scheduled" and "scheduled_frequencies". It should toggle a variable called "scheduling" in each branch.
-- The second one is a list of times (times only, no dates) that the user can insert/delete times from, with a "frequency" value corresponding to each time entry. If the user currently selected "scheduled_frequencies", then the "frequency" value should be able to be changed; If the user currently selected "scheduled", then the "frequency" value should be hidden. The data of the list itself, however, should be the same regardless of whether the user selects "scheduled" or "scheduled_frequencies", as only one of these can be selected at one time. Also, the list of times should be in order. Make sure that the list of times gets stored in each branch inside the this.lines object. 
+In @editor_version/editor_version1.html, check the saveToCookie function in the vue app. Check why it doesn't save a cookie and fix it.
 
 Make sure that the code can run in the end.

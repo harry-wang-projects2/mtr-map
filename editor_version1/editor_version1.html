@@ -16,6 +16,7 @@
                 <button @click="addLine" class="add">Add Line</button>
                 <button @click="importJSON">Import JSON</button>
                 <button @click="exportJSON">Export JSON</button>
+                <button @click="saveToCookie" class="add">Save to Cookie</button>
                 <button @click="zoomOut">Zoom Out</button>
             </div>
             
@@ -344,7 +345,10 @@
             },
             mounted() {
                 this.initMap();
-                this.loadSampleData();
+                this.loadFromCookie();
+                if (this.lines.length === 0) {
+                    this.loadSampleData();
+                }
                 window.addEventListener('keydown', this.handleKeyPress);
             },
             watch: {
@@ -976,6 +980,49 @@
                     if (branch.timetable) {
                         branch.timetable.sort((a, b) => a.time.localeCompare(b.time));
                     }
+                },
+                saveToCookie() {
+                    const dataStr = JSON.stringify(this.lines);
+                    console.log(dataStr);
+                    localStorage.setItem('subwayMapData', dataStr);
+                    document.cookie = "username=John Doe";
+                    alert("test");
+                },
+                loadFromCookie() {
+                    const savedData = localStorage.getItem('subwayMapData');
+                    if (savedData) {
+                        try {
+                            this.lines = JSON.parse(savedData);
+                                for (let i = 0; i < this.lines.length; i++) {
+                                    for (let j = 0; j < this.lines[i].branches.length; j++) {
+                                        if (!this.lines[i].branches[j].hasOwnProperty('branch_type')) {
+                                            this.lines[i].branches[j].branch_type = "normal";
+                                        }
+                                    }
+                                    if (!this.lines[i].hasOwnProperty('label')) {
+                                        this.lines[i].label = this.lines[i].name;
+                                    }
+                                    if (!this.lines[i].hasOwnProperty('markertype')) {
+                                        this.lines[i].markertype = "default";
+                                    }
+                                    if (!this.lines[i].hasOwnProperty('image')) {
+                                        this.lines[i].image = "";
+                                    }
+                                    if (!this.lines[i].hasOwnProperty('max_speed')) {
+                                        this.lines[i].max_speed = 22.2;
+                                    }
+                                    if (!this.lines[i].hasOwnProperty('acceleration')) {
+                                        this.lines[i].acceleration = 1.0;
+                                    }
+                                    this.lines[i].icon = generate_train_icon_2(this.lines[i].markertype, this.lines[i].line_color, this.lines[i].label, this.lines[i].image);
+                                }
+                                return true;
+                            } catch (error) {
+                                console.error('Error loading from cookie:', error);
+                                return false;
+                            }
+                        }
+                    return false;
                 }
             }
         }).mount('#app');
