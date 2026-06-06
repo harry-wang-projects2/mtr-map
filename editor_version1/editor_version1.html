@@ -653,6 +653,9 @@
                     });
 
                     // Segment midpoint buttons for inserting checkpoints
+                    //test: Disable, see if performance increases
+
+                    /*
                     const addSegBtn = (lat1, lng1, lat2, lng2, li, bi, si, insertIdx, initProg) => {
                         const midLat = (lat1 + lat2) / 2;
                         const midLng = (lng1 + lng2) / 2;
@@ -722,7 +725,7 @@
                             }
                         });
                     });
-
+                    */
                     // Only fit bounds if not in coordinate mode
                     if (allCoords.length > 0 && !this.coordinateMode && change_zoom === true) {
                         const lngs = allCoords.map(c => c[0]);
