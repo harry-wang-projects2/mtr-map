@@ -17,3 +17,6 @@ Move time display (currently the element tickdisplay) into the box containing th
 Next, make an input in the "playback stage" box where the user can set the current time. The input should be in the form of a 24-hour time (14:02:33). Convert this time to seconds (i.e. 50553 seconds for 14:02:33) and set the current time to this.
 
 Finally, display the 24-hour time on the map. Don't put it at a specific latitude or longtitude. Make it hover at the top of the map.
+
+
+Make it so that for the lines variable, I can set "z-index" variables for each line. The "z-index" determines how forward/backward the markers of each line get shown on the map. For example, if line A has a z-index of 10 and line B has a z-index of 5, then the trains (i.e. markers representing trains) of line A should be on top of the trains of line B on the map.
