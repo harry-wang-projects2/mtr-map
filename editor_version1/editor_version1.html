@@ -1108,6 +1108,16 @@
                     if(event.key === 'l' || event.key === 'L') {
                         this.exportJSON();
                     }
+                    //add time
+                    if(event.key === 't' || event.key === 'T') {
+                        let lineindex_to_use = this.activeTab;
+                        let branchindex_to_use = this.getActiveBranchTab(lineindex_to_use);
+                        this.addTimetableEntry(lineindex_to_use, branchindex_to_use);
+                    }
+                    //calculate everything
+                    if(event.key === 'l' || event.key === 'L') {
+                        this.exportJSON();
+                    }
                 },
                 onBranchTypeChange(lineIndex, branchIndex) {
                     const branch = this.lines[lineIndex].branches[branchIndex];
@@ -1119,7 +1129,7 @@
                 addTimetableEntry(lineIndex, branchIndex) {
                     const branch = this.lines[lineIndex].branches[branchIndex];
                     if (!branch.timetable) branch.timetable = [];
-                    branch.timetable.push({ time: "00:00", frequency: 1 });
+                    branch.timetable.push({ time: "23:59", frequency: 1 });
                     this.sortTimetable(lineIndex, branchIndex);
                 },
                 deleteTimetableEntry(lineIndex, branchIndex, entryIndex) {
