@@ -311,3 +311,43 @@ export function calculate_traveltimes(vm, lineIndex, branchIndex) {
         vm.lines[i].branches[j].stations[k].run = Math.ceil(got_array[k]);
     }
 }
+
+
+
+export function computeBranchJourneySeconds(branch){
+    if(branch.branch_type == "circular"){
+        let total = 0;
+        //dwell of the original branch and 
+        for(let s = 0; s < branch.stations.length; s++){
+          const st = branch.stations[s];
+          total += (st.dwell || 0) + (st.run || 0);
+        }
+        return Math.max(1, Math.round(total));
+      }else if(branch.branch_type == "unidirectional"){
+        //unidirectional is close to circular as it's only one direction.
+        let total = 0;
+        for(let s = 0; s < branch.stations.length - 1; s++){
+          const st = branch.stations[s];
+          total += (st.dwell || 0) + (st.run || 0);
+        }
+        total += branch.stations[branch.stations.length - 1].dwell;
+        return Math.max(1, Math.round(total));
+      }else{
+        let total = 0;
+        let dwelling = 0;
+        let running = 0;
+        //dwell of the original branch and 
+        total += branch.stations[0].dwell;
+        for(let s = 1; s < branch.stations.length - 1; s++){
+          const st = branch.stations[s];
+          dwelling += (st.dwell || 0);
+          running += (st.run || 0);
+        }
+        total += dwelling * 2;
+        total += branch.stations[0].run * 2 + running * 2;
+        total += branch.stations[branch.stations.length - 1].dwell
+
+        // Must be >= 1 so we can index trajectory[timeProgress].
+        return Math.max(1, Math.round(total));
+    }
+}

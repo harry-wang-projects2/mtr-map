@@ -335,7 +335,7 @@
             addLine, cloneLine, requestDeleteLine, requestDeleteBranch, requestDeleteStation, requestDeleteCheckpoint,
             confirmDelete, cancelDelete, deleteLine, addBranch, cloneBranch, deleteBranch,
             updateicon, addStation, deleteStation, addCheckpoint, deleteCheckpoint, insertCheckpointAt,
-            moveStationUp, moveCheckpointUp, calculate_progress, calculate_allprogresses, calculate_traveltimes
+            moveStationUp, moveCheckpointUp, calculate_progress, calculate_allprogresses, calculate_traveltimes, computeBranchJourneySeconds
         } from "./lines.js";
         const { createApp } = Vue;
 
@@ -420,6 +420,7 @@
                 calculateBranchTraversalTime(lineIndex, branchIndex) {
                     // TODO: implement this function
                     // should return the traversal time in seconds for the given branch
+                    return computeBranchJourneySeconds(this.lines[lineIndex].branches[branchIndex]);
                 },
                 updateBranchTraversalTime(lineIndex, branchIndex) {
                     const key = `${lineIndex}-${branchIndex}`;
